@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PassGuard — Honest Password Strength Checker</title>
+<meta name="description" content="PassGuard checks password strength with real entropy maths, pattern checks and a small local statistical model. 100% in your browser — nothing is ever sent anywhere.">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="top">
+  <div class="wrap top-inner">
+    <div>
+      <h1>🛡️ PassGuard</h1>
+      <p class="tagline" data-i18n="tagline">How strong is your password, really? Checked honestly — in your browser, nowhere else.</p>
+    </div>
+    <div class="top-actions">
+      <button id="lang-toggle" class="btn ghost" type="button">हिन्दी</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <p class="privacy">🔒 <span data-i18n="privacy">100% private: your password never leaves this page. No server, no tracking, no breach lookup — everything is computed locally.</span></p>
+
+  <!-- Checker -->
+  <section class="card" aria-label="Password checker">
+    <label for="password" class="field-label" data-i18n="typeLabel">Type a password to check it</label>
+    <div class="pw-row">
+      <input id="password" type="password" autocomplete="off" spellcheck="false"
+             placeholder="e.g. Tr0ub4dor&3" aria-describedby="score-line">
+      <button id="toggle-visibility" class="btn ghost" type="button" aria-label="Show password">👁️ <span data-i18n="show">Show</span></button>
+      <button id="clear-btn" class="btn ghost" type="button" data-i18n="clear">Clear</button>
+    </div>
+
+    <div class="examples">
+      <span data-i18n="try">Try an example:</span>
+      <button type="button" class="chip example" data-pw="password">password</button>
+      <button type="button" class="chip example" data-pw="sachin123">sachin123</button>
+      <button type="button" class="chip example" data-pw="Tr0ub4dor&3">Tr0ub4dor&amp;3</button>
+      <button type="button" class="chip example" data-pw="J7#kq9!Zx2$mQ8w">J7#kq9!Zx2$mQ8w</button>
+    </div>
+
+    <div class="score-block">
+      <div class="score-head">
+        <div>
+          <div id="score-line"><span id="score-value">–</span><span class="score-max"> / 100</span></div>
+          <div id="band-label" class="band">–</div>
+        </div>
+        <div class="entropy-box">
+          <div><span data-i18n="entropy">Entropy</span>: <strong id="entropy-value">–</strong></div>
+          <div><span data-i18n="effectiveEntropy">After pattern penalties</span>: <strong id="effective-entropy-value">–</strong></div>
+        </div>
+      </div>
+      <div class="meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="meter">
+        <div id="meter-fill"></div>
+      </div>
+      <div id="charset-chips" class="chips"></div>
+    </div>
+
+    <div class="grid2">
+      <div>
+        <h2 data-i18n="crackTime">How long would it take to crack?</h2>
+        <p class="muted small" data-i18n="crackNote">Estimates, not guarantees. Assumptions stated below.</p>
+        <dl class="crack">
+          <div><dt data-i18n="online">Online attack (throttled login, 100 guesses/sec)</dt><dd id="crack-online">–</dd></div>
+          <div><dt data-i18n="offline">Offline attack (fast hash on a GPU, 10 billion guesses/sec)</dt><dd id="crack-offline">–</dd></div>
+        </dl>
+        <h2 data-i18n="predictability">Does it look like a common password?</h2>
+        <p class="muted small" data-i18n="predictNote">Small local statistical model (character trigrams trained on a built-in list of 206 common passwords). Higher = more like the passwords everybody picks.</p>
+        <div class="meter thin"><div id="ngram-fill"></div></div>
+        <p><span id="ngram-label">–</span> · <span id="ngram-score" class="muted">–</span></p>
+      </div>
+      <div>
+        <h2 data-i18n="findings">What we found</h2>
+        <ul id="findings" class="list"><li class="muted" data-i18n="typeFirst">Type a password first.</li></ul>
+        <h2 data-i18n="goodPoints">What's good</h2>
+        <ul id="positives" class="list"><li class="muted">–</li></ul>
+      </div>
+    </div>
+
+    <h2 data-i18n="advice">What to do</h2>
+    <ul id="advice" class="list advice"><li class="muted" data-i18n="typeFirst2">Type a password first.</li></ul>
+  </section>
+
+  <!-- Generators -->
+  <section class="card" aria-label="Generators">
+    <h2 data-i18n="genTitle">Need a strong one? Generate it here</h2>
+    <p class="muted" data-i18n="genNote">Generated with your device's secure random generator (<code>crypto.getRandomValues</code>). Nothing is stored or sent.</p>
+    <div class="grid2">
+      <div>
+        <h3 data-i18n="genPw">Random password</h3>
+        <label class="field-label" for="pw-length"><span data-i18n="length">Length</span>: <strong id="pw-length-value">16</strong></label>
+        <input id="pw-length" type="range" min="12" max="32" value="16">
+        <div class="checks">
+          <label><input type="checkbox" id="opt-symbols" checked> <span data-i18n="symbols">Symbols</span></label>
+          <label><input type="checkbox" id="opt-digits" checked> <span data-i18n="digits">Numbers</span></label>
+        </div>
+        <button id="gen-password-btn" class="btn primary" type="button" data-i18n="genPwBtn">Generate password</button>
+        <div class="output-row">
+          <code id="gen-password-output" class="output">–</code>
+          <button id="copy-password-btn" class="btn ghost" type="button" data-i18n="copy">Copy</button>
+        </div>
+      </div>
+      <div>
+        <h3 data-i18n="genPhrase">Memorable passphrase</h3>
+        <label class="field-label" for="phrase-words"><span data-i18n="words">Words</span>: <strong id="phrase-words-value">5</strong></label>
+        <input id="phrase-words" type="range" min="4" max="7" value="5">
+        <button id="gen-passphrase-btn" class="btn primary" type="button" data-i18n="genPhraseBtn">Generate passphrase</button>
+        <div class="output-row">
+          <code id="gen-passphrase-output" class="output">–</code>
+          <button id="copy-passphrase-btn" class="btn ghost" type="button" data-i18n="copy2">Copy</button>
+        </div>
+        <p class="muted small"><span data-i18n="phraseBits">Strength</span>: <strong id="phrase-bits">–</strong></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <section class="card" aria-label="How it works">
+    <h2 data-i18n="howTitle">How it works — no magic, no fake data</h2>
+    <ol class="how">
+      <li data-i18n="how1"><strong>Entropy:</strong> length × log₂ of the character pool actually used (26 per letter case, 10 digits, 32 symbols). A random 16-character mixed password is ~105 bits.</li>
+      <li data-i18n="how2"><strong>Pattern checks:</strong> the password is tested against a built-in list of 206 widely published top-passwords (including leet-speak like P@ssw0rd), keyboard walks (qwerty, 1qaz), sequences (abc, 123), repeats, and years.</li>
+      <li data-i18n="how3"><strong>Predictability model:</strong> a character-trigram model trained on that same 206-password list scores how much the password "looks like" a common one. Small and honest — it is a teaching-size model, not a breach database.</li>
+      <li data-i18n="how4"><strong>Crack time:</strong> average guesses = 2^(effective entropy − 1), divided by a stated rate. Online: 100 guesses/sec (throttled login). Offline: 10 billion/sec (fast hash on a GPU).</li>
+    </ol>
+    <h3 data-i18n="limitsTitle">Honest limits</h3>
+    <ul class="how">
+      <li data-i18n="limit1">The common-password list is a small sample, not a breach database — a password can be "not found here" and still be leaked somewhere.</li>
+      <li data-i18n="limit2">Entropy assumes characters are random. A "strong" score does not protect a password that is reused, phished, or stored in plaintext by a website.</li>
+      <li data-i18n="limit3">Use a different password for every site, and turn on 2-step verification wherever it is offered.</li>
+    </ul>
+  </section>
+</main>
+
+<footer class="wrap foot">
+  <p><span data-i18n="builtBy">Built by</span> <strong>Mohd Raja</strong> (GitHub: <a href="https://github.com/devilking7x">devilking7x</a>) · <span data-i18n="forHack">for</span> <a href="https://slayy-hacks.devpost.com/">SLAY HACKS 2026</a> · <a href="https://github.com/devilking7x/slay-passguard">Source code</a></p>
+  <p class="muted small" data-i18n="footNote">Static site, no build step, no server, no tracking. Works offline once loaded.</p>
+</footer>
+
+<script src="passguard.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

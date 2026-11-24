@@ -1,0 +1,1 @@
+{"description":"PassGuard — honest, fully client-side password strength checker for SLAY HACKS 2026","name":"slay-passguard","private":true,"scripts":{"smoke":"node tests/smoke.mjs","test":"node --test tests/passguard.test.js","test:all":"node --test tests/passguard.test.js && node tests/smoke.mjs"},"version":"1.0.0"}
